@@ -184,7 +184,80 @@ reference can be reassigned as following:
 Rust's comparison operator can "see through" the reference, that is if we take reference as wrapping the object in a box, then when you compareing two boxes.
 Rust will take the object inside each box and compare them:
 ```rs
+ let f = 10;
+    let g = 10;
+
+    let rf = &f;
+    let rg = &g;
+    /*
+    reference to reference is just like wrapping box with another box, when compare with
+    the outside box, rust will take the object out which is located in the most inner box
+    */
+    let rrf = &rf;
+    let rrg = &rg;
+    println!("is rrf <= rrg? :{}", rrf <= rrg); //true, the object in the most inner box is value 10
+    println!("is rrf == rrg?:{}", rrf == rrg);
+
+    /*
+    if we want to check the given to boxes are the same, we need to use std::prt::eq
+    */
+    println!("is rf == rg: {}", std::ptr::eq(rf, rg)); //comparing the wrapping box
+                                                       /*
+                                                       we can't compare the inside box with the outside box
+                                                       */
+    //println!("is rg == rrg:{}", rg == rrg); //panic here
+    /*
+    we can take the insided box out from the outside box
+    */
+    println!("is rx == *rrx:{}", rg == *rrg);
 ```
+
+The tricky thing is , We can convert a constant to a reference as following:
+```r
+  /*
+    Rust will create two "unseen" varaible to hold the reference of constant 1 and 2
+    that is &1 is Equivalent to let a = 1; let unsee_variable = &a;
+    */
+    println!("the result of two constant reference is :{}", &1 + &2);
+```
+As the code aboved, we have symbol & prefix with a constant number, Rust will implicitly create an unseen variabe and initialize its value to 1, then create another
+unseen variable to hold the reference of the first unseen variable as the shown in the comment aboved.
+
+There are several rules that restrict the use of reference, the first rule that is we can't reference to a local variable and take it out of its living scope, 
+for example:
+```rs
+ /*
+    not allowed to reference an object and take it out from its living scope
+    */
+    {
+        let r;
+        {
+            //x can't live out the scope in the brackets
+            let x = 1;
+            r = &x;
+        }// life of x ends here
+        println!("r: {}", r); //error, the object being referenced is invalidated
+    } life of r ends here
+```
+and the following one is ok, if the variable that is being referenced has life time longer thant the variable holding the reference:
+```r
+ /*
+    life time of variable being referenced is longer thant the variable holding the
+    reference
+    */
+    {
+        /*
+        x is the variable being referenced and r holds the reference to x,
+        and the life time of x is longer thant r
+        */
+        let x;
+        {
+            let r = &x;
+            println!("{}", r);
+        } //life of r ends here
+    } //life of x ends here
+```
+Since the variable being referenced has life time longer than the variable holding the reference, therefore the aboved code is legal.
 
 
 
