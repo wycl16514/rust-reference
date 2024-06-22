@@ -111,3 +111,81 @@ Let's summerize something related to above code. If we passing an object to a fu
 we passing the reference of the object to a function and keep the ownership to its oringinal owner , we call this passing by reference. If we passing an object to
 function and allow the function to write into the object and keeping the ownership unchanged, we call this passing mutable reference.
 
+As we have seen aboved, reference is usful when we want to pass an object to a function without lossing the ownership. But this is only the tip of the iceberg, there
+are many details or traps covered by the symbol of & and &mut. As we have seen before, when we want to access the value with reference type, we need the * operator
+to undo the reference such as :
+```r
+fn main() {
+    let x = 10;
+    let r = &x;
+    println!("value of is r equals to 10?: {}", r == 10);
+}
+```
+The aboved code will cause error, but if we change to following it would be ok:
+```r
+fn main() {
+    let x = 10;
+    let r = &x;
+    //error to access the value of reference
+    //println!("value of is r equals to 10?: {}", r == 10);
+
+    //need to dereference by using *
+    println!("value of is r equals to 10?: {}", *r == 10);
+}
+```
+
+But could you notice we never using * in function of iterating_mapping to access the content of an referenced object. Why? There is an implicit deference to object
+of type with struct, when we want to access fields in an struct object, we use the operator ".", this operator will implicitly using the * to do the dereference.
+Let's see an example here:
+```r
+struct Anime {
+        name: String,
+        bechdel_pass: bool,
+    };
+    let aria = Anime {
+        name: "Aria: The Animation".to_string(),
+        bechdel_pass: true,
+    };
+    let aria_ref = &aria;
+    /*
+    aria_ref.name is Equivalent to to *(aria_ref).name
+    */
+    println!("aria_ref.name is : {}", aria_ref.name);
+    /*
+    error, operator "." convert the left object to shared reference only
+    */
+    aria_ref.name = "Tom".to_string();
+```
+
+The "." operator will implicitly convert the object at the left to reference if the right side is a field of the object, or convert the object at the left to mutable
+reference if the right side is a method call such as :
+```r
+let mut v = vec![1973, 1968];
+    /*
+    it is the same as (&mut v).sort(); or sort(&mut v); since the right of . is method call, then Rust compiler
+    convert the left which is the vairable v into a mutable reference
+    */
+    v.sort();
+```
+
+reference can be reassigned as following:
+```r
+/*
+    reference can be reassigend
+    */
+    let x = 10;
+    let y = 20;
+    let mut r = &x;
+    println!("value of r:{}", r); //10
+    r = &y;
+    println!("value of r:{}", r); //20
+```
+
+Rust's comparison operator can "see through" the reference, that is if we take reference as wrapping the object in a box, then when you compareing two boxes.
+Rust will take the object inside each box and compare them:
+```rs
+```
+
+
+
+
