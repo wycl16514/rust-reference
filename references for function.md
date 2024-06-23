@@ -52,5 +52,62 @@ have seen the life time indicator is a tick symbol following a string like 'stat
 arbitrary string, as long as we can let the compiler can reason out the life time for the reference type, let's see an example:
 
 ```rs
+fn construct_string(str_one: &mut String, str_two: &mut String) -> &String {
+    str_one.push_str(" returned");
+    str_one
+}
 
+fn main() {
+    let str_one = "hello";
+    let v: &str;
+    {
+        let str_two = "world";
+        v = construct_string(str_one, str_two);
+    } //str_two ends here
+    println!("construct string:{}", v);
+}
 ```
+Could you see the trick here, the function construct_string return a reference of string literal, and this return value depend on the two input parameters as we have shown in the code. If the returned value
+is depend on the first arguemnt, then the aboved code is legal, since v is constructed from str_one and when we access the v in the println!, it is still in valite state, but if the return value is depend on
+the second parameter, then when we access v in the line of println!, then content of v is already invalidated because str_two is invalidated, therefore the code has ambiguity and the compiler will refuse to 
+compile.
+
+We need to tell the compiler the returned value of construct_string depends on which parameter, the first one or the second, that's place we need to utilize the life time indicator, and we can change the code
+as following:
+```rs
+fn construct_string<'str_one_life_time, 'str_two_life_time>(
+    str_one: &'str_one_life_time mut String,
+    str_two: &'str_two_life_time mut String,
+) -> &'str_one_life_time String {
+    str_one.push_str(" returned");
+    str_one
+    //what if we return str_two?
+    //str_two
+}
+```
+Since the code aboved tell the compiler that the returned value of construct_string has the same life time as the first input argument, and when we calling construct_string, the first arguemnt is str_one,
+and when we access v, the str_one is still in valid state, therefore the code can be compiled. If we add a new function as following:
+```
+fn construct_string2<'str_one_life_time, 'str_two_life_time>(
+    str_one: &'str_one_life_time mut String,
+    str_two: &'str_two_life_time mut String,
+) -> &'str_two_life_time String {
+    str_two.push_str(" returned");
+    str_two
+}
+
+fn main() {
+    let mut str_one = "hello".to_string();
+    let v: &str;
+    {
+        let mut str_two = "world".to_string();
+        //v = construct_string(str_one, str_two);
+        v = construct_string2(&mut str_one, &mut str_two);
+    } //str_two ends here
+    println!("construct string:{}", v);
+}
+```
+
+When we call construct_string2, the compiler would know the returned value has the same life time as str_two, but the life time of v is longer than str_two, that means when we access v, str_two may already 
+invalidated, therefore the compiler will refuse to compile the code aboved.
+
