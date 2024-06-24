@@ -53,5 +53,7 @@ When we define a field in a struct as type of struct, it is just like we define 
         s: S<'a>,
     }
 ```
-This will enforce the life span of field s of D  as type of struct S will not longer than the wrapping struct D.
+This will enforce the life span of field s of D  as type of struct S will not longer than the wrapping struct D. Here we setup an implicit inequality that is:
+
+life span of field r <= life span of struct S <= life span of Struct D
 
