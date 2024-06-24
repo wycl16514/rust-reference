@@ -57,3 +57,50 @@ This will enforce the life span of field s of D  as type of struct S will not lo
 
 life span of field r <= life span of struct S <= life span of Struct D
 
+There are some trick situation we need to think about, for example we deifine a struct and set its fields to the life span as indicate by the struct:
+```rs
+struct S<'a> {
+        x: &'a i32,
+        y: &'a i32,
+    }
+```
+The life time indicator in aboved code shows the field x and y has the same life span. This will cause problem if we assign reference objects to x and y but each of 
+which has different lief span such as :
+```rs
+ let x = 10;
+    let r;
+    {
+        let y = 20;
+        {
+            let s = S { x: &x, y: &y };
+            r = s.x;
+        } //s ends here and so does its fiels of  x and y
+          //even though x is removed as s but the object inside x still valid
+    } // y ends here
+    println!("{}", r);
+```
+if you compile the code aboved, the compiler will complain as following:
+
+![截屏2024-06-24 18 29 50](https://github.com/wycl16514/rust-reference/assets/7506958/c2bad0bf-96f1-4634-a1fd-f1f0ce894d82)
+
+The compiler says y dose not live long enough, but the life span of y is certainly longer than struct s and therefore longer than the field y in struct s. The 
+reasoning is that, since field x and y has the same life span as indicated in the definition,  if field x and y has different life span in code, the compiler need
+to find a comman ground that satisfy both x and y.
+
+And the assigment "r = s.x" forces the life span of x should be the same as r, but the intialization of "let s = S { x: &x, y: &y };" requires the y field in the 
+struct has the same life span as y aboved, there is not "common ground" that between these two, therefore the compiler gives out the complain.The solution is we give
+x and y different life span as following:
+```rs
+struct S<'a, 'b> {
+        x: &'a i32,
+        y: &'b i32,
+    }
+```
+Now since x and y has different life span, then the conflict aboved can be solved. By default we don't need to indicate life span for each reference field in struct,
+Rust compiler simply assign different life span to each reference field in the struct, for example the struct defined above is the same as the following:
+```rs
+ struct S{
+        x: &i32,
+        y: &i32
+    }
+```
